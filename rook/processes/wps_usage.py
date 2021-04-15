@@ -4,7 +4,7 @@ from pywps import FORMATS, ComplexOutput, Format, LiteralInput, Process
 from pywps.app.Common import Metadata
 from pywps.app.exceptions import ProcessError
 
-from rook.usage import GeoUsage
+from rook.usage import GeoUsage, DBUsage
 
 
 LOGGER = logging.getLogger()
@@ -34,6 +34,13 @@ class Usage(Process):
                 as_reference=True,
                 supported_formats=[FORMATS.TEXT],
             ),
+            ComplexOutput(
+                "dbusage",
+                "DBUsage",
+                abstract="OGC:WPS metrics collected from pywps database.",
+                as_reference=True,
+                supported_formats=[FORMATS.TEXT],
+            ),
         ]
 
         super(Usage, self).__init__(
@@ -52,7 +59,7 @@ class Usage(Process):
         )
 
     def _handler(self, request, response):
-        response.update_status("GeoUsage started.", 0)
+        response.update_status("Usage started.", 0)
         if "time" in request.inputs:
             time = request.inputs["time"][0].data
         else:
@@ -62,7 +69,12 @@ class Usage(Process):
             response.outputs["geousage"].file = usage.collect(
                 time=time, outdir=self.workdir
             )
+            response.update_status("GeoUsage completed.", 50)
+            usage = DBUsage()
+            response.outputs["dbusage"].file = usage.collect(
+                time=time, outdir=self.workdir
+            )
+            response.update_status("DBUsage completed.", 100)
         except Exception as e:
             raise ProcessError(f"{e}")
-        response.update_status("GeoUsage completed.", 100)
         return response
