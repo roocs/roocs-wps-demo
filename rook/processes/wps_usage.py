@@ -52,7 +52,7 @@ class Usage(Process):
     def _handler(self, request, response):
         response.update_status("GeoUsage started.", 0)
         cmd = ["GeoUsage", "log", "analyze"]
-        cmd.extend(glob.glob("/var/log/nginx/access.log*"))
+        cmd.extend(sorted(glob.glob("/var/log/nginx/access.log*")))
         cmd.extend(
             [
                 "--service-type",
