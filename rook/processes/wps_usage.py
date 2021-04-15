@@ -1,11 +1,10 @@
 import logging
-import os
-import glob
-import subprocess
 
 from pywps import FORMATS, ComplexOutput, Format, LiteralInput, Process
 from pywps.app.Common import Metadata
 from pywps.app.exceptions import ProcessError
+
+from rook.usage import GeoUsage
 
 
 LOGGER = logging.getLogger()
@@ -26,9 +25,12 @@ class Usage(Process):
         ]
         outputs = [
             ComplexOutput(
-                "output",
+                "geousage",
                 "GeoUsage",
-                abstract="Output of GeoUsage as text.",
+                abstract="OGC:WPS metrics collected from apache/nginx log files.",
+                metadata=[
+                    Metadata("GeoUsage", "https://github.com/geopython/GeoUsage"),
+                ],
                 as_reference=True,
                 supported_formats=[FORMATS.TEXT],
             ),
@@ -51,28 +53,16 @@ class Usage(Process):
 
     def _handler(self, request, response):
         response.update_status("GeoUsage started.", 0)
-        cmd = ["GeoUsage", "log", "analyze"]
-        cmd.extend(sorted(glob.glob("/var/log/nginx/access.log*")))
-        cmd.extend(
-            [
-                "--service-type",
-                "OGC:WPS",
-                "--endpoint",
-                "/wps",
-                "--resolve-ips",
-                "--top",
-                "200",
-            ]
-        )
         if "time" in request.inputs:
-            cmd.extend(["--time", request.inputs["time"][0].data])
-        result = subprocess.run(cmd, capture_output=True, shell=False)
-        if result.returncode != 0:
-            raise ProcessError(
-                f"GeoUsage failed: {result.stderr.decode('utf-8', errors='ignore')}"
+            time = request.inputs["time"][0].data
+        else:
+            time = None
+        try:
+            usage = GeoUsage()
+            response.outputs["geousage"].file = usage.collect(
+                time=time, outdir=self.workdir
             )
-        with open(os.path.join(self.workdir, "geousage.txt"), "w") as fout:
-            fout.write(result.stdout.decode("utf-8", errors="ignore"))
-            response.outputs["output"].file = fout.name
+        except Exception as e:
+            raise ProcessError(f"{e}")
         response.update_status("GeoUsage completed.", 100)
         return response
