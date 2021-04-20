@@ -1,2 +1,3 @@
 from .geousage import GeoUsage
-from .db import DBUsage
+from .wpsusage import WPSUsage
+from .downloads import Downloads

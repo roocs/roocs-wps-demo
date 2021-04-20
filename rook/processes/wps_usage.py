@@ -4,7 +4,7 @@ from pywps import FORMATS, ComplexOutput, Format, LiteralInput, Process
 from pywps.app.Common import Metadata
 from pywps.app.exceptions import ProcessError
 
-from rook.usage import GeoUsage, DBUsage
+from rook.usage import GeoUsage, WPSUsage, Downloads
 
 
 LOGGER = logging.getLogger()
@@ -27,7 +27,7 @@ class Usage(Process):
             ComplexOutput(
                 "geousage",
                 "GeoUsage",
-                abstract="OGC:WPS metrics collected from apache/nginx log files.",
+                abstract="OGC:WPS metrics collected from nginx log files.",
                 metadata=[
                     Metadata("GeoUsage", "https://github.com/geopython/GeoUsage"),
                 ],
@@ -35,11 +35,18 @@ class Usage(Process):
                 supported_formats=[FORMATS.TEXT],
             ),
             ComplexOutput(
-                "dbusage",
-                "DBUsage",
+                "wpsusage",
+                "WPSUsage",
                 abstract="OGC:WPS metrics collected from pywps database.",
                 as_reference=True,
-                supported_formats=[FORMATS.TEXT],
+                supported_formats=[FORMATS.CSV],
+            ),
+            ComplexOutput(
+                "downloads",
+                "Downloads",
+                abstract="Downloads collected from nginx log file.",
+                as_reference=True,
+                supported_formats=[FORMATS.CSV],
             ),
         ]
 
@@ -69,12 +76,17 @@ class Usage(Process):
             response.outputs["geousage"].file = usage.collect(
                 time=time, outdir=self.workdir
             )
-            response.update_status("GeoUsage completed.", 50)
-            usage = DBUsage()
-            response.outputs["dbusage"].file = usage.collect(
+            response.update_status("GeoUsage completed.", 30)
+            usage = WPSUsage()
+            response.outputs["wpsusage"].file = usage.collect(
                 time=time, outdir=self.workdir
             )
-            response.update_status("DBUsage completed.", 100)
+            response.update_status("WPSUsage completed.", 60)
+            usage = Downloads()
+            response.outputs["downloads"].file = usage.collect(
+                time=time, outdir=self.workdir
+            )
+            response.update_status("WPSUsage completed.", 90)
         except Exception as e:
             raise ProcessError(f"{e}")
         return response
