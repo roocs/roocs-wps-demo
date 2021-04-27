@@ -4,7 +4,8 @@ from pywps import FORMATS, ComplexOutput, Format, LiteralInput, Process
 from pywps.app.Common import Metadata
 from pywps.app.exceptions import ProcessError
 
-from rook.usage import GeoUsage, WPSUsage, Downloads
+from ..usage import WPSUsage, Downloads
+from roocs_utils.parameter import time_parameter
 
 
 LOGGER = logging.getLogger()
@@ -24,16 +25,6 @@ class Usage(Process):
             ),
         ]
         outputs = [
-            ComplexOutput(
-                "geousage",
-                "GeoUsage",
-                abstract="OGC:WPS metrics collected from nginx log files.",
-                metadata=[
-                    Metadata("GeoUsage", "https://github.com/geopython/GeoUsage"),
-                ],
-                as_reference=True,
-                supported_formats=[FORMATS.TEXT],
-            ),
             ComplexOutput(
                 "wpsusage",
                 "WPSUsage",
@@ -69,24 +60,21 @@ class Usage(Process):
         response.update_status("Usage started.", 0)
         if "time" in request.inputs:
             time = request.inputs["time"][0].data
+            time_start, time_end = time_parameter.TimeParameter(time).tuple
         else:
             time = None
+            time_start = time_end = None
         try:
-            usage = GeoUsage()
-            response.outputs["geousage"].file = usage.collect(
-                time=time, outdir=self.workdir
-            )
-            response.update_status("GeoUsage completed.", 30)
             usage = WPSUsage()
             response.outputs["wpsusage"].file = usage.collect(
-                time=time, outdir=self.workdir
+                time_start=time_start, time_end=time_end, outdir=self.workdir
             )
-            response.update_status("WPSUsage completed.", 60)
+            response.update_status("WPSUsage completed.", 50)
             usage = Downloads()
             response.outputs["downloads"].file = usage.collect(
-                time=time, outdir=self.workdir
+                time_start=time_start, time_end=time_end, outdir=self.workdir
             )
-            response.update_status("WPSUsage completed.", 90)
+            response.update_status("Downloads usage completed.", 90)
         except Exception as e:
             raise ProcessError(f"{e}")
         return response

@@ -123,7 +123,7 @@ def parse_record(line):
 
 
 class Downloads(Usage):
-    def collect(self, time=None, outdir=None):
+    def collect(self, time_start=None, time_end=None, outdir=None):
         log_files = sorted(glob.glob("/var/log/nginx/access.log*"))
         records = []
         for f in log_files:
@@ -141,9 +141,13 @@ class Downloads(Usage):
                 records.append(record)
             logfile.close()
         df = pd.DataFrame(records)
-        df_downloads = df.loc[
+        df = df.loc[
             df["request"].str.contains(r"/outputs/rook/.*/.*\.nc", regex=True)
         ]  # noqa
+        if time_start:
+            df = df.loc[df["datetime"] >= time_start]
+        if time_end:
+            df = df.loc[df["datetime"] <= time_end]
         fname = os.path.join(outdir, "downloads.csv")
-        df_downloads.to_csv(fname, index=False)
+        df.to_csv(fname, index=False)
         return fname

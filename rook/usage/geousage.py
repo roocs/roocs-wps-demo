@@ -6,7 +6,7 @@ from .base import Usage
 
 
 class GeoUsage(Usage):
-    def collect(self, time=None, outdir=None):
+    def collect(self, time_start=None, time_end=None, outdir=None):
         cmd = ["GeoUsage", "log", "analyze"]
         cmd.extend(sorted(glob.glob("/var/log/nginx/access.log*")))
         cmd.extend(
@@ -20,8 +20,8 @@ class GeoUsage(Usage):
                 "200",
             ]
         )
-        if time:
-            cmd.extend(["--time", time])
+        if time_start and time_end:
+            cmd.extend(["--time", f"{time_start}/{time_end}"])
         result = subprocess.run(cmd, capture_output=True)
         if result.returncode != 0:
             raise Exception(
