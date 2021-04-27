@@ -144,6 +144,7 @@ class Downloads(Usage):
         df = df.loc[
             df["request"].str.contains(r"/outputs/rook/.*/.*\.nc", regex=True)
         ]  # noqa
+        # df['datetime'] = pd.to_datetime(df['datetime'])
         if time_start:
             df = df.loc[df["datetime"] >= time_start]
         if time_end:
