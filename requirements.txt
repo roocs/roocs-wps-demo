@@ -19,5 +19,3 @@ intake
 fsspec<0.9
 pandas
 aiohttp
-# usage
-GeoUsage @ git+https://github.com/geopython/GeoUsage@master
