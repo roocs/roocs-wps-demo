@@ -142,3 +142,16 @@ def test_wps_subset_time_invariant_dataset():
     )
     assert_response_success(resp)
     assert "meta4" in get_output(resp.xml)["output"]
+
+
+def test_wps_subset_memory_allocation_error():
+    client = client_for(Service(processes=[Subset()], cfgfiles=[PYWPS_CFG]))
+    datainputs = "collection=c3s-cmip6.CMIP.CNRM-CERFACS.CNRM-CM6-1-HR.historical.r1i1p1f2.day.tasmin.gr.v20191021"
+    datainputs += ";area=-18,8,-4,20;time=1980-01-01/2014-12-31"
+    resp = client.get(
+        "?service=WPS&request=Execute&version=1.0.0&identifier=subset&datainputs={}".format(
+            datainputs
+        )
+    )
+    assert_response_success(resp)
+    assert "meta4" in get_output(resp.xml)["output"]
